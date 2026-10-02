@@ -1,0 +1,67 @@
+name: Build Android app
+
+# Builds an installable APK on every push. Download it from the run's
+# "Artifacts" section (Actions tab → latest run → tasks-android-apk).
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create Android project
+        run: |
+          npx cap add android
+          node scripts/patch-android.mjs
+          npx capacitor-assets generate --android
+          npx cap sync android
+
+      # Optional: add these repository secrets to sign with your own key, so new
+      # versions install over the old one without losing data (see README).
+      - name: Build signed release APK
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: android
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/release.jks" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+          mkdir -p ../dist && cp app/build/outputs/apk/release/app-release.apk ../dist/Tasks.apk
+      - name: Build debug APK
+        if: env.HAS_KEYSTORE != 'true'
+        working-directory: android
+        run: |
+          ./gradlew assembleDebug --no-daemon
+          mkdir -p ../dist && cp app/build/outputs/apk/debug/app-debug.apk ../dist/Tasks.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tasks-android-apk
+          path: dist/Tasks.apk
+          if-no-files-found: error

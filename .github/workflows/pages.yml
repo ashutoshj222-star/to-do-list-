@@ -1,0 +1,28 @@
+name: Publish web app (optional)
+
+# Run this manually (Actions tab → "Publish web app" → Run workflow) only when you
+# want a link to install the app on an iPhone or share it. Your tasks are never
+# uploaded — they stay on each person's own device.
+# First enable it once: Settings → Pages → Source: "GitHub Actions".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+      - id: deployment
+        uses: actions/deploy-pages@v4

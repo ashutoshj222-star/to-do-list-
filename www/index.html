@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tasks</title>
+  <meta name="description" content="A simple offline to-do list with reminders.">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tasks">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <span class="eyebrow" id="today-label"></span>
+      <button class="icon-btn" id="settings-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    </div>
+    <h1 id="view-title">Today</h1>
+    <nav class="segmented" role="tablist" aria-label="Lists">
+      <button type="button" role="tab" data-view="today">Today</button>
+      <button type="button" role="tab" data-view="tomorrow">Tomorrow</button>
+      <button type="button" role="tab" data-view="upcoming">Upcoming</button>
+      <button type="button" role="tab" data-view="done">Done</button>
+    </nav>
+  </header>
+
+  <div class="banner" id="notif-banner" hidden>
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>
+    <span>Turn on notifications so reminders can reach you.</span>
+    <button type="button" class="link" id="banner-enable">Turn On</button>
+  </div>
+
+  <main id="list" aria-live="polite"></main>
+
+  <button class="fab" id="add-btn" type="button">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
+    <span>New Task</span>
+  </button>
+
+  <div class="toast" id="toast" role="status" hidden>
+    <span id="toast-text"></span>
+    <button type="button" class="link" id="toast-action" hidden>Undo</button>
+  </div>
+
+  <!-- Task editor -->
+  <div class="backdrop" id="backdrop" hidden></div>
+  <form class="sheet" id="editor" role="dialog" aria-modal="true" aria-labelledby="editor-title" hidden autocomplete="off">
+    <div class="sheet-head">
+      <button type="button" class="link" data-close>Cancel</button>
+      <h2 id="editor-title">New Task</h2>
+      <button type="submit" class="link strong" id="save-btn" disabled>Add</button>
+    </div>
+    <div class="sheet-body">
+      <div class="group">
+        <input class="field title-field" id="f-title" name="title" placeholder="What do you need to do?" maxlength="200" required enterkeyhint="done">
+        <textarea class="field" id="f-notes" name="notes" placeholder="Notes" rows="2" maxlength="2000"></textarea>
+      </div>
+
+      <div class="chips" role="group" aria-label="Quick date">
+        <button type="button" class="chip" data-quick="today">Today</button>
+        <button type="button" class="chip" data-quick="tomorrow">Tomorrow</button>
+        <button type="button" class="chip" data-quick="week">Next week</button>
+        <button type="button" class="chip" data-quick="none">No date</button>
+      </div>
+
+      <div class="group">
+        <label class="row">
+          <span class="row-icon" style="--c: var(--red)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm-2 8h14v10H5V10Z"/></svg></span>
+          <span class="row-label">Date</span>
+          <input type="date" id="f-date" name="date">
+        </label>
+        <label class="row">
+          <span class="row-icon" style="--c: var(--accent)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2v6.4Z"/></svg></span>
+          <span class="row-label">Time</span>
+          <input type="time" id="f-time" name="time">
+        </label>
+        <label class="row">
+          <span class="row-icon" style="--c: var(--purple)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg></span>
+          <span class="row-label">Remind me</span>
+          <input type="checkbox" class="switch" role="switch" id="f-remind" name="remind">
+        </label>
+        <label class="row">
+          <span class="row-icon" style="--c: var(--gray)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1l4 4-4 4V6H7a2 2 0 0 0-2 2v3H3V8a4 4 0 0 1 4-4h10V1ZM7 23l-4-4 4-4v3h10a2 2 0 0 0 2-2v-3h2v3a4 4 0 0 1-4 4H7v3Z"/></svg></span>
+          <span class="row-label">Repeat</span>
+          <select id="f-repeat" name="repeat">
+            <option value="none">Never</option>
+            <option value="daily">Every day</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Every week</option>
+          </select>
+        </label>
+        <label class="row">
+          <span class="row-icon" style="--c: var(--orange)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h2v1h11.5l-2.5 5 2.5 5H7v9H5V2Z"/></svg></span>
+          <span class="row-label">Flag</span>
+          <input type="checkbox" class="switch" role="switch" id="f-flag" name="flagged">
+        </label>
+      </div>
+      <p class="hint" id="remind-hint" hidden></p>
+
+      <div class="group" id="editor-extra" hidden>
+        <button type="button" class="row action" id="ask-ai">
+          <span class="row-icon" style="--c: var(--indigo)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2l1.9 5.1L18 9l-5.1 1.9L11 16l-1.9-5.1L4 9l5.1-1.9L11 2Zm7 11 1 2.6 2.6 1-2.6 1L18 22l-1-2.4-2.6-1 2.6-1L18 13Z"/></svg></span>
+          <span class="row-label">Ask AI how to finish this</span>
+        </button>
+        <button type="button" class="row action danger" id="delete-btn">
+          <span class="row-label">Delete Task</span>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Settings -->
+  <section class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+    <div class="sheet-head">
+      <span></span>
+      <h2 id="settings-title">Settings</h2>
+      <button type="button" class="link strong" data-close>Done</button>
+    </div>
+    <div class="sheet-body">
+      <h3 class="group-title">Reminders</h3>
+      <div class="group">
+        <div class="row">
+          <span class="row-label">Notifications</span>
+          <span class="row-value" id="notif-status">—</span>
+        </div>
+        <button type="button" class="row action" id="notif-enable">Turn On Notifications</button>
+        <button type="button" class="row action" id="notif-test">Send Test Notification</button>
+        <label class="row">
+          <span class="row-label">Default reminder time</span>
+          <input type="time" id="s-default-time">
+        </label>
+      </div>
+      <p class="hint" id="notif-hint"></p>
+
+      <h3 class="group-title">AI helper</h3>
+      <div class="group">
+        <button type="button" class="row action" id="ai-plan-tomorrow">Plan tomorrow with AI</button>
+        <button type="button" class="row action" id="ai-plan-today">Plan today with AI</button>
+      </div>
+      <p class="hint">Sends your tasks to ChatGPT, Claude or any AI app you pick (or copies them), and asks for a step‑by‑step plan.</p>
+
+      <h3 class="group-title">Your data</h3>
+      <div class="group">
+        <button type="button" class="row action" id="export-btn">Export Backup</button>
+        <label class="row action" for="import-file">Import Backup</label>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+        <button type="button" class="row action danger" id="clear-done">Clear Completed Tasks</button>
+      </div>
+      <p class="hint">Everything is stored only on this device. Nothing is sent to any server.</p>
+
+      <div class="group" id="install-group" hidden>
+        <button type="button" class="row action" id="install-btn">Install App on Home Screen</button>
+      </div>
+
+      <p class="hint center" id="version-label"></p>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

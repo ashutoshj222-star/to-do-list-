@@ -1,0 +1,14 @@
+{
+  "appId": "app.tasks.todo",
+  "appName": "Tasks",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F2F2F7"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#007AFF"
+    }
+  }
+}
