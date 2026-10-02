@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="focus_guard_service_label">Tasks · Block YouTube Shorts</string>
+    <string name="focus_guard_service_description">Keeps you focused: when YouTube opens a Short, Tasks closes it right away. It only looks at the YouTube app, only checks whether the Shorts player is on screen, and never reads, stores or sends anything else. You can turn blocking off any time in Tasks → Settings → Focus.</string>
+</resources>
