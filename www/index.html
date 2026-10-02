@@ -21,9 +21,18 @@
   <header class="top">
     <div class="top-row">
       <span class="eyebrow" id="today-label"></span>
-      <button class="icon-btn" id="settings-btn" type="button" aria-label="Settings">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-      </button>
+      <div class="top-actions">
+        <button class="focus-pill" id="focus-pill" type="button" hidden aria-label="Focus timer running">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 1h6v2H9V1Zm10.03 6.39 1.42-1.42-1.41-1.41-1.42 1.42A9 9 0 1 0 19.03 7.39ZM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14Zm-1-12h2v5h-2V8Z"/></svg>
+          <span id="focus-pill-text">25:00</span>
+        </button>
+        <button class="icon-btn" id="focus-btn" type="button" aria-label="Focus timer">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 1h6v2H9V1Zm10.03 6.39 1.42-1.42-1.41-1.41-1.42 1.42A9 9 0 1 0 19.03 7.39ZM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14Zm-1-12h2v5h-2V8Z"/></svg>
+        </button>
+        <button class="icon-btn" id="settings-btn" type="button" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+        </button>
+      </div>
     </div>
     <div class="title-row">
       <h1 id="view-title">Today</h1>
@@ -161,6 +170,69 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       </button>
     </form>
+  </section>
+
+  <!-- Focus timer -->
+  <section class="sheet" id="focus" role="dialog" aria-modal="true" aria-labelledby="focus-title" hidden>
+    <div class="sheet-head">
+      <span></span>
+      <h2 id="focus-title">Focus</h2>
+      <button type="button" class="link strong" data-close>Done</button>
+    </div>
+    <div class="sheet-body">
+      <div id="focus-setup">
+        <h3 class="group-title">How long?</h3>
+        <div class="duration-grid" role="group" aria-label="Focus length">
+          <button type="button" class="duration" data-min="15"><b>15</b><span>min</span></button>
+          <button type="button" class="duration" data-min="25"><b>25</b><span>min</span></button>
+          <button type="button" class="duration" data-min="45"><b>45</b><span>min</span></button>
+          <button type="button" class="duration" data-min="60"><b>1</b><span>hour</span></button>
+          <button type="button" class="duration" data-min="120"><b>2</b><span>hours</span></button>
+          <button type="button" class="duration" data-min="custom"><b>…</b><span>Custom</span></button>
+        </div>
+        <div class="group" id="custom-duration" hidden>
+          <label class="row">
+            <span class="row-label">Hours</span>
+            <input type="number" id="fd-hours" min="0" max="12" step="1" inputmode="numeric" value="0">
+          </label>
+          <label class="row">
+            <span class="row-label">Minutes</span>
+            <input type="number" id="fd-mins" min="0" max="59" step="1" inputmode="numeric" value="30">
+          </label>
+        </div>
+        <div class="group">
+          <label class="row">
+            <span class="row-label">Focus on</span>
+            <select id="focus-task"></select>
+          </label>
+          <label class="row" id="focus-block-row">
+            <span class="row-label">Block YouTube Shorts</span>
+            <input type="checkbox" class="switch" role="switch" id="focus-block" checked>
+          </label>
+        </div>
+        <p class="hint" id="focus-setup-hint"></p>
+        <button type="button" class="primary-btn wide" id="focus-start">Start Focus</button>
+      </div>
+
+      <div id="focus-running" hidden>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="54"/>
+            <circle class="ring-bar" id="ring-bar" cx="60" cy="60" r="54"/>
+          </svg>
+          <div class="ring-text">
+            <div class="ring-time" id="focus-remaining">25:00</div>
+            <div class="ring-sub" id="focus-ends"></div>
+          </div>
+        </div>
+        <p class="focus-task-name" id="focus-task-name"></p>
+        <p class="hint center" id="focus-run-hint"></p>
+        <div class="focus-actions">
+          <button type="button" class="pill-btn" id="focus-add5">+5 min</button>
+          <button type="button" class="pill-btn danger" id="focus-stop">End Focus</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- Settings -->

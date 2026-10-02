@@ -38,7 +38,7 @@ public class ShortsBlockerService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null || event.getPackageName() == null) return;
         if (!YOUTUBE.contentEquals(event.getPackageName())) return;
-        if (!FocusPrefs.blockShorts(this)) return;
+        if (!FocusPrefs.shouldBlockShorts(this)) return;
 
         long now = SystemClock.elapsedRealtime();
         if (now - lastBlockAt < MIN_INTERVAL_MS) return;
@@ -52,7 +52,8 @@ public class ShortsBlockerService extends AccessibilityService {
             FocusPrefs.recordBlock(this);
             if (now - lastToastAt > 4000) {
                 lastToastAt = now;
-                Toast.makeText(this, "Shorts blocked · stay focused", Toast.LENGTH_SHORT).show();
+                String message = FocusPrefs.inFocus(this) ? "Shorts blocked · you're in focus time" : "Shorts blocked · stay focused";
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             }
         }
     }

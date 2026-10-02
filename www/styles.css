@@ -491,3 +491,42 @@ main {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Focus timer ---------- */
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.focus-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px 0 10px; border-radius: 999px;
+  background: var(--indigo); color: #fff;
+  font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.focus-pill svg { width: 18px; height: 18px; fill: currentColor; }
+.duration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.duration {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 72px; border-radius: 14px;
+  background: var(--sheet-group); color: var(--text);
+  transition: background .15s, color .15s;
+}
+.duration b { font-size: 26px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.duration span { font-size: 13px; color: var(--text-2); }
+.duration[aria-pressed="true"] { background: var(--indigo); color: #fff; }
+.duration[aria-pressed="true"] span { color: rgba(255, 255, 255, .85); }
+.row input[type="number"] {
+  width: 84px; border: 0; outline: 0; background: var(--fill); color: var(--text);
+  border-radius: 7px; padding: 6px 10px; font-size: 17px; min-height: 34px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.primary-btn.wide { display: flex; width: 100%; margin: 4px 0 8px; background: var(--indigo); }
+.ring-wrap { position: relative; width: min(260px, 70vw); aspect-ratio: 1; margin: 12px auto 8px; }
+.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 8; }
+.ring-track { stroke: var(--fill); }
+.ring-bar { stroke: var(--indigo); stroke-linecap: round; stroke-dasharray: 339.29; transition: stroke-dashoffset 1s linear; }
+.ring-text { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring-time { font-size: 48px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.ring-sub { font-size: 15px; color: var(--text-2); }
+.focus-task-name { margin: 8px 16px 4px; text-align: center; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.focus-task-name:empty { display: none; }
+.focus-actions { display: flex; justify-content: center; gap: 12px; margin: 16px 0 8px; }
+.pill-btn.danger { color: var(--red); }

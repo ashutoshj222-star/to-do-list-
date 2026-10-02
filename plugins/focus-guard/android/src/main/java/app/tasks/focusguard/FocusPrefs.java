@@ -13,6 +13,7 @@ final class FocusPrefs {
     private static final String KEY_BLOCK_SHORTS = "block_shorts";
     private static final String KEY_COUNT_DAY = "count_day";
     private static final String KEY_COUNT = "count";
+    private static final String KEY_FOCUS_UNTIL = "focus_until";
 
     private FocusPrefs() {}
 
@@ -30,6 +31,24 @@ final class FocusPrefs {
 
     static void setBlockShorts(Context context, boolean enabled) {
         prefs(context).edit().putBoolean(KEY_BLOCK_SHORTS, enabled).apply();
+    }
+
+    /** End of the current focus session (epoch ms), or 0. Shorts are blocked until then. */
+    static long focusUntil(Context context) {
+        return prefs(context).getLong(KEY_FOCUS_UNTIL, 0L);
+    }
+
+    static void setFocusUntil(Context context, long until) {
+        prefs(context).edit().putLong(KEY_FOCUS_UNTIL, until).apply();
+    }
+
+    static boolean inFocus(Context context) {
+        return System.currentTimeMillis() < focusUntil(context);
+    }
+
+    /** Block Shorts if the always-on switch is on, or during a focus session. */
+    static boolean shouldBlockShorts(Context context) {
+        return blockShorts(context) || inFocus(context);
     }
 
     static int blockedToday(Context context) {

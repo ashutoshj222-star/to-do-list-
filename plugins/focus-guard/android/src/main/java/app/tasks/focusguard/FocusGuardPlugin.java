@@ -27,6 +27,20 @@ public class FocusGuardPlugin extends Plugin {
         call.resolve(status());
     }
 
+    /** Block Shorts until the given time (epoch ms), even if the always-on switch is off. */
+    @PluginMethod
+    public void startFocus(PluginCall call) {
+        Double until = call.getDouble("until", 0.0);
+        FocusPrefs.setFocusUntil(getContext(), until == null ? 0L : until.longValue());
+        call.resolve(status());
+    }
+
+    @PluginMethod
+    public void stopFocus(PluginCall call) {
+        FocusPrefs.setFocusUntil(getContext(), 0L);
+        call.resolve(status());
+    }
+
     @PluginMethod
     public void openAccessibilitySettings(PluginCall call) {
         startSettings(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
@@ -52,6 +66,7 @@ public class FocusGuardPlugin extends Plugin {
         result.put("serviceEnabled", isServiceEnabled(context));
         result.put("blockShorts", FocusPrefs.blockShorts(context));
         result.put("blockedToday", FocusPrefs.blockedToday(context));
+        result.put("focusUntil", FocusPrefs.focusUntil(context));
         return result;
     }
 

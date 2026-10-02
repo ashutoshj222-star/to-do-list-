@@ -10,7 +10,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '1.2.0';
+  const APP_VERSION = '1.3.0';
   const STORAGE_KEY = 'tasks.v1';
   const SNOOZE_MINUTES = 10;
   const STALE_REMINDER_MS = 6 * 60 * 60 * 1000; // don't pop reminders older than 6h on open
@@ -101,11 +101,11 @@
       if (raw) {
         const data = JSON.parse(raw);
         if (data && Array.isArray(data.tasks)) {
-          return { version: 1, tasks: data.tasks.map(normalize), settings: mergeSettings(data.settings) };
+          return { version: 1, tasks: data.tasks.map(normalize), settings: mergeSettings(data.settings), focus: data.focus && data.focus.until ? data.focus : null };
         }
       }
     } catch (e) { console.warn('Could not read saved tasks', e); }
-    return { version: 1, tasks: [], settings: mergeSettings() };
+    return { version: 1, tasks: [], settings: mergeSettings(), focus: null };
   }
 
   function save() {
@@ -388,11 +388,12 @@
 
   let toastTimer = null;
   let toastUndo = null;
-  function toast(text, undo) {
+  function toast(text, undo, actionLabel = 'Undo') {
     const el = $('#toast');
     $('#toast-text').textContent = text;
     toastUndo = undo || null;
     $('#toast-action').hidden = !undo;
+    $('#toast-action').textContent = actionLabel;
     el.hidden = false;
     el.style.animation = 'none';
     void el.offsetWidth;
@@ -1068,7 +1069,7 @@
   const nativeId = (id) => {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) | 0;
-    return (Math.abs(h) % 2147483646) + 1;
+    return (Math.abs(h) % 2147483000) + 1;
   };
 
   let syncTimer = null;
@@ -1090,9 +1091,16 @@
       .filter((x) => x.at != null && x.at > now)
       .sort((a, b) => a.at - b.at)
       .slice(0, MAX_NATIVE_SCHEDULED);
-    if (!upcoming.length) return;
+    const focusEnd = focusActive() ? [{
+      id: FOCUS_NOTIF_ID,
+      title: 'Focus time is up 🎉',
+      body: `You focused for ${fmtMinutes(state.focus.minutes)}. Take a short break.`,
+      schedule: { at: new Date(state.focus.until), allowWhileIdle: true },
+      channelId: 'reminders',
+    }] : [];
+    if (!upcoming.length && !focusEnd.length) return;
     await LN.schedule({
-      notifications: upcoming.map(({ t, at }) => ({
+      notifications: [...focusEnd, ...upcoming.map(({ t, at }) => ({
         id: nativeId(t.id),
         title: t.title,
         body: reminderBody(t),
@@ -1100,7 +1108,7 @@
         channelId: 'reminders',
         actionTypeId: 'TASK_REMINDER',
         extra: { taskId: t.id },
-      })),
+      }))],
     });
   }
 
@@ -1364,6 +1372,181 @@
   }
   $('#clear-done').addEventListener('click', clearCompleted);
 
+  /* ---------------------------------------------------------------- focus timer */
+
+  const FOCUS_NOTIF_ID = 2147483600; // task reminder ids stay below 2147483000
+  const RING = 339.29; // circumference of the progress ring (r = 54)
+  let focusChoice = state.settings.focusMinutes || 25; // minutes, or 'custom'
+  let focusTicker = null;
+
+  const focusActive = () => !!(state.focus && state.focus.until > Date.now());
+
+  function fmtClock(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${pad(m)}:${pad(s % 60)}`;
+  }
+
+  function fmtMinutes(min) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return [h ? `${h} hour${h > 1 ? 's' : ''}` : '', m ? `${m} min` : ''].filter(Boolean).join(' ');
+  }
+
+  function chosenMinutes() {
+    if (focusChoice !== 'custom') return focusChoice;
+    const h = Math.min(12, Math.max(0, parseInt($('#fd-hours').value, 10) || 0));
+    const m = Math.min(59, Math.max(0, parseInt($('#fd-mins').value, 10) || 0));
+    return h * 60 + m;
+  }
+
+  function renderFocusSetup() {
+    for (const b of $$('.duration')) b.setAttribute('aria-pressed', String(String(focusChoice) === b.dataset.min));
+    $('#custom-duration').hidden = focusChoice !== 'custom';
+    const min = chosenMinutes();
+    const start = $('#focus-start');
+    start.disabled = min < 1;
+    start.textContent = min < 1 ? 'Choose how long' : `Start ${fmtMinutes(min)} Focus`;
+
+    const sel = $('#focus-task');
+    const prev = sel.value;
+    const open = state.tasks.filter((t) => viewFor(t) === 'today').sort(byDue);
+    sel.innerHTML = `<option value="">Nothing specific</option>${open.map((t) => `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('')}`;
+    if (prev && open.some((t) => t.id === prev)) sel.value = prev;
+
+    $('#focus-block-row').hidden = !FocusGuard;
+    const hint = $('#focus-setup-hint');
+    hint.textContent = FocusGuard
+      ? 'While the timer runs, YouTube Shorts close as soon as they open. You’ll get a notification when time is up.'
+      : 'You’ll get a notification when time is up. (Shorts blocking works in the Android app.)';
+    if (FocusGuard && $('#focus-block').checked) {
+      FocusGuard.getStatus().then((st) => {
+        if (!st.serviceEnabled) hint.textContent = 'To block Shorts, first finish the one-time setup in Settings → Focus. The timer works either way.';
+      }).catch(() => {});
+    }
+  }
+
+  function updateFocusUI() {
+    const active = focusActive();
+    $('#focus-pill').hidden = !active;
+    $('#focus-btn').hidden = active;
+    if (!active) return;
+    const f = state.focus;
+    const left = f.until - Date.now();
+    $('#focus-pill-text').textContent = fmtClock(left);
+    if (!$('#focus-running').hidden) {
+      $('#focus-remaining').textContent = fmtClock(left);
+      const total = f.until - f.startedAt;
+      $('#ring-bar').style.strokeDashoffset = String(RING * (1 - Math.max(0, left) / total));
+    }
+  }
+
+  function renderFocus() {
+    const active = focusActive();
+    $('#focus-setup').hidden = active;
+    $('#focus-running').hidden = !active;
+    if (!active) { renderFocusSetup(); updateFocusUI(); return; }
+    const f = state.focus;
+    const task = f.taskId && getTask(f.taskId);
+    $('#focus-task-name').textContent = task ? task.title : '';
+    $('#focus-ends').textContent = `Ends at ${new Date(f.until).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+    $('#focus-run-hint').textContent = f.blockShorts ? 'YouTube Shorts are blocked until the timer ends.' : 'Stay with it. You’ll get a notification when time is up.';
+    updateFocusUI();
+  }
+
+  function openFocus() {
+    openSheet($('#focus'));
+    renderFocus();
+  }
+
+  function applyFocusNative() {
+    if (!FocusGuard) return;
+    try {
+      const call = focusActive() && state.focus.blockShorts
+        ? FocusGuard.startFocus({ until: state.focus.until })
+        : FocusGuard.stopFocus();
+      Promise.resolve(call).catch(() => {});
+    } catch (e) { /* older native build without focus support */ }
+  }
+
+  function startTicker() {
+    clearInterval(focusTicker);
+    focusTicker = setInterval(() => {
+      if (state.focus && state.focus.until <= Date.now()) finishFocus(true);
+      else updateFocusUI();
+    }, 1000);
+    updateFocusUI();
+  }
+
+  function startFocus() {
+    const min = chosenMinutes();
+    if (min < 1) return;
+    const now = Date.now();
+    state.focus = {
+      startedAt: now,
+      until: now + min * 60000,
+      minutes: min,
+      taskId: $('#focus-task').value || null,
+      blockShorts: !!FocusGuard && $('#focus-block').checked,
+    };
+    state.settings.focusMinutes = focusChoice;
+    save();
+    requestNotificationPermission();
+    applyFocusNative();
+    syncReminders();
+    startTicker();
+    renderFocus();
+    toast(`Focus started · ${fmtMinutes(min)}`);
+  }
+
+  function finishFocus(completed) {
+    const f = state.focus;
+    if (!f) return;
+    state.focus = null;
+    save();
+    clearInterval(focusTicker);
+    applyFocusNative();
+    syncReminders();
+    if (openSheetEl === $('#focus')) renderFocus(); else updateFocusUI();
+    if (!completed) { toast('Focus ended'); return; }
+    const task = f.taskId && getTask(f.taskId);
+    const recent = Date.now() - f.until < 10 * 60000;
+    if (!isNative && recent) showWebNotification('Focus time is up 🎉', task ? `Nice work on “${task.title}”.` : `You focused for ${fmtMinutes(f.minutes)}.`);
+    if (task && !task.done) toast(`Focus done 🎉 Finished “${task.title}”?`, () => completeTask(task.id), 'Mark done');
+    else toast(`Focus done 🎉 ${fmtMinutes(f.minutes)}`);
+  }
+
+  for (const b of $$('.duration')) {
+    b.addEventListener('click', () => {
+      focusChoice = b.dataset.min === 'custom' ? 'custom' : Number(b.dataset.min);
+      renderFocusSetup();
+    });
+  }
+  $('#fd-hours').addEventListener('input', renderFocusSetup);
+  $('#fd-mins').addEventListener('input', renderFocusSetup);
+  $('#focus-block').addEventListener('change', renderFocusSetup);
+  $('#focus-start').addEventListener('click', startFocus);
+  $('#focus-stop').addEventListener('click', () => finishFocus(false));
+  $('#focus-add5').addEventListener('click', () => {
+    if (!focusActive()) return;
+    state.focus.until += 5 * 60000;
+    state.focus.minutes += 5;
+    save();
+    applyFocusNative();
+    syncReminders();
+    renderFocus();
+    toast('Added 5 minutes');
+  });
+  $('#focus-btn').addEventListener('click', openFocus);
+  $('#focus-pill').addEventListener('click', openFocus);
+
+  function initFocus() {
+    if (!state.focus) { applyFocusNative(); return; }
+    if (state.focus.until <= Date.now()) finishFocus(true);
+    else { applyFocusNative(); startTicker(); }
+  }
+
   /* ---------------------------------------------------------------- events */
 
   for (const b of $$('.segmented button')) b.addEventListener('click', () => setView(b.dataset.view));
@@ -1434,6 +1617,7 @@
   /* ---------------------------------------------------------------- boot */
 
   render();
+  initFocus();
 
   if (isNative) {
     setupNative().then(syncReminders);

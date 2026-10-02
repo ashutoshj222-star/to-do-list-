@@ -109,6 +109,16 @@ can chat, but some can't use tools, so they may not be able to change your tasks
 Without an AI key, the assistant offers to **share** your task or day plan to
 the ChatGPT or Claude app on your phone instead.
 
+## Focus timer
+
+Tap the **timer** button at the top. Pick **15 min, 25 min, 45 min, 1 hour, 2 hours**
+or **Custom** (any hours and minutes), optionally choose the task you're working
+on, and tap **Start**. The countdown shows at the top of the app. You can add 5
+minutes or end early. When time is up you get a notification, and if you picked a
+task the app asks whether to mark it done. In the Android app, **YouTube Shorts
+are blocked while the timer runs** (after the one-time setup below), even if the
+always-on switch is off.
+
 ## Focus: block YouTube Shorts (Android app)
 
 Turn on **Settings → Focus → Block YouTube Shorts** and Shorts close the moment
