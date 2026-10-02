@@ -109,6 +109,27 @@ can chat, but some can't use tools, so they may not be able to change your tasks
 Without an AI key, the assistant offers to **share** your task or day plan to
 the ChatGPT or Claude app on your phone instead.
 
+## Focus: block YouTube Shorts (Android app)
+
+Turn on **Settings → Focus → Block YouTube Shorts** and Shorts close the moment
+they open, whether you tap the Shorts tab, a Short in your feed, or a Shorts
+link. Normal YouTube videos aren't affected.
+
+One-time setup (the app shows the same two steps):
+
+1. **Only if Android says the setting is "restricted"** (Android 13+, apps
+   installed from a file): tap **Step 1**, then in App info tap **⋮** at the top
+   right → **Allow restricted settings**.
+2. Tap **Step 2**, open **Installed apps** (or *Downloaded apps*) →
+   **Tasks · Block YouTube Shorts** → turn it on.
+
+How it works: an Android Accessibility service that is limited to the YouTube
+app. It only checks whether the Shorts player is on screen, and if it is, it
+presses Back. It doesn't read, store or send anything else. If a YouTube update
+ever renames the Shorts player, add the new name to `SHORTS_VIEW_IDS` in
+`plugins/focus-guard/android/src/main/java/app/tasks/focusguard/ShortsBlockerService.java`.
+It doesn't block Shorts on youtube.com in a browser.
+
 ## Connecting other AI apps (MCP, later)
 
 You can also let outside AI apps such as Claude Desktop or ChatGPT control your
@@ -190,6 +211,7 @@ www/                 the app (plain HTML/CSS/JS, no build step)
   manifest.webmanifest
   icons/
 assets/              source images for the Android icon and splash screen
+plugins/focus-guard/ native Android plugin: YouTube Shorts blocker (accessibility service)
 scripts/             patch-android.mjs (permissions), make-icons.mjs (renders icons)
 capacitor.config.json  wraps www/ as a native Android/iOS app
 .github/workflows/   android.yml (builds APK), pages.yml (optional web link)

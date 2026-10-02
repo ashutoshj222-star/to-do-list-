@@ -10,7 +10,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.2.0';
   const STORAGE_KEY = 'tasks.v1';
   const SNOOZE_MINUTES = 10;
   const STALE_REMINDER_MS = 6 * 60 * 60 * 1000; // don't pop reminders older than 6h on open
@@ -26,6 +26,7 @@
   const isNative = !!(Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform());
   const LN = isNative ? Cap.Plugins.LocalNotifications : null;
   const NativeShare = isNative ? Cap.Plugins.Share : null;
+  const FocusGuard = isNative ? Cap.Plugins.FocusGuard : null; // plugins/focus-guard (Android)
 
   /* ---------------------------------------------------------------- dates */
 
@@ -1117,7 +1118,7 @@
     });
     const app = Cap.Plugins.App;
     if (app) {
-      app.addListener('resume', () => { render(); syncReminders(); });
+      app.addListener('resume', () => { render(); syncReminders(); if (openSheetEl === $('#settings')) refreshFocus(); });
       app.addListener('backButton', () => { if (openSheetEl) closeSheet(); else app.minimizeApp(); });
     }
   }
@@ -1158,8 +1159,57 @@
   function openSettings() {
     refreshSettings();
     refreshAISettings();
+    refreshFocus();
     openSheet($('#settings'));
   }
+
+  /* Focus: block YouTube Shorts (Android accessibility service) */
+  const focusSwitch = $('#focus-shorts');
+
+  async function refreshFocus() {
+    const hint = $('#focus-hint');
+    const steps = [$('#focus-restricted'), $('#focus-accessibility')];
+    if (!FocusGuard) {
+      focusSwitch.disabled = true;
+      steps.forEach((b) => { b.hidden = true; });
+      hint.textContent = 'Available in the Android app. Blocks YouTube Shorts so they close as soon as they open.';
+      return;
+    }
+    let st;
+    try { st = await FocusGuard.getStatus(); } catch (e) {
+      focusSwitch.disabled = true;
+      hint.textContent = 'Shorts blocking isn’t available in this version of the app.';
+      return;
+    }
+    focusSwitch.disabled = false;
+    focusSwitch.checked = !!st.blockShorts;
+    const needsSetup = st.blockShorts && !st.serviceEnabled;
+    steps.forEach((b) => { b.hidden = !needsSetup; });
+    if (needsSetup) {
+      hint.innerHTML = 'One-time setup. Android needs your permission for Tasks to close Shorts:<br>'
+        + '<b>Step 1</b> (only if Android says the setting is “restricted”): in App info, tap <b>⋮</b> at the top right → <b>Allow restricted settings</b>.<br>'
+        + '<b>Step 2</b>: in Accessibility, open <b>Installed apps</b> (or Downloaded apps) → <b>Tasks · Block YouTube Shorts</b> → turn it on.<br>'
+        + 'It only watches the YouTube app, and only checks whether a Short is on screen.';
+    } else if (st.blockShorts) {
+      hint.textContent = `On. Shorts close as soon as they open${st.blockedToday ? ` · blocked ${st.blockedToday} time${st.blockedToday === 1 ? '' : 's'} today` : ''}.`;
+    } else {
+      hint.textContent = 'Turn on to stop YouTube Shorts from opening. Uses Android Accessibility, only for the YouTube app.';
+    }
+  }
+
+  focusSwitch.addEventListener('change', async () => {
+    if (!FocusGuard) return;
+    try {
+      const st = await FocusGuard.setBlockShorts({ enabled: focusSwitch.checked });
+      if (st.blockShorts && !st.serviceEnabled) toast('Almost done — follow the 2 steps below');
+      else toast(st.blockShorts ? 'YouTube Shorts blocked' : 'Shorts blocking turned off');
+    } catch (e) {
+      toast('Could not change this setting');
+    }
+    refreshFocus();
+  });
+  $('#focus-restricted').addEventListener('click', () => FocusGuard && FocusGuard.openAppSettings());
+  $('#focus-accessibility').addEventListener('click', () => FocusGuard && FocusGuard.openAccessibilitySettings());
 
   /* AI model settings */
   const aiEl = { provider: $('#ai-provider'), url: $('#ai-url'), key: $('#ai-key'), model: $('#ai-model'), pick: $('#ai-model-pick') };

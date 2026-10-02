@@ -1,6 +1,6 @@
 {
   "name": "tasks",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "A simple offline to-do list with an AI assistant and reminders. Runs as a PWA or an Android app.",
   "scripts": {
@@ -15,7 +15,8 @@
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
     "@capacitor/local-notifications": "^8.0.2",
-    "@capacitor/share": "^8.0.2"
+    "@capacitor/share": "^8.0.2",
+    "focus-guard": "file:plugins/focus-guard"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

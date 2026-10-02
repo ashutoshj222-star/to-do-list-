@@ -1,0 +1,15 @@
+{
+  "name": "focus-guard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native Android focus tools for Tasks: blocks YouTube Shorts using an accessibility service.",
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "files": [
+    "android/src/main/",
+    "android/build.gradle"
+  ]
+}

@@ -1,5 +1,5 @@
 /* Service worker: makes the app work offline and handles notification buttons. */
-const CACHE = 'tasks-v1.1.0';
+const CACHE = 'tasks-v1.2.0';
 const ASSETS = [
   './',
   'index.html',
