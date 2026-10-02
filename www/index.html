@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Tasks</title>
-  <meta name="description" content="A simple offline to-do list with reminders.">
+  <meta name="description" content="A simple offline to-do list with reminders and an AI assistant.">
   <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
@@ -25,11 +25,14 @@
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
       </button>
     </div>
-    <h1 id="view-title">Today</h1>
+    <div class="title-row">
+      <h1 id="view-title">Today</h1>
+      <span class="progress" id="view-progress"></span>
+    </div>
     <nav class="segmented" role="tablist" aria-label="Lists">
       <button type="button" role="tab" data-view="today">Today</button>
       <button type="button" role="tab" data-view="tomorrow">Tomorrow</button>
-      <button type="button" role="tab" data-view="upcoming">Upcoming</button>
+      <button type="button" role="tab" data-view="later">Later</button>
       <button type="button" role="tab" data-view="done">Done</button>
     </nav>
   </header>
@@ -42,18 +45,25 @@
 
   <main id="list" aria-live="polite"></main>
 
-  <button class="fab" id="add-btn" type="button">
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>
-    <span>New Task</span>
-  </button>
+  <!-- Always-visible quick add bar -->
+  <form class="composer" id="composer" autocomplete="off">
+    <button type="button" class="composer-ai" id="open-assistant" aria-label="Open AI assistant">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2l1.9 5.1L18 9l-5.1 1.9L11 16l-1.9-5.1L4 9l5.1-1.9L11 2Zm7 11 1 2.6 2.6 1-2.6 1L18 22l-1-2.4-2.6-1 2.6-1L18 13Z"/></svg>
+    </button>
+    <input id="quick-add" placeholder="Add a task" maxlength="200" enterkeyhint="done" aria-label="New task">
+    <button type="submit" class="composer-add" id="add-btn" aria-label="Add task">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>
+    </button>
+  </form>
 
   <div class="toast" id="toast" role="status" hidden>
     <span id="toast-text"></span>
     <button type="button" class="link" id="toast-action" hidden>Undo</button>
   </div>
 
-  <!-- Task editor -->
   <div class="backdrop" id="backdrop" hidden></div>
+
+  <!-- Task editor -->
   <form class="sheet" id="editor" role="dialog" aria-modal="true" aria-labelledby="editor-title" hidden autocomplete="off">
     <div class="sheet-head">
       <button type="button" class="link" data-close>Cancel</button>
@@ -66,11 +76,26 @@
         <textarea class="field" id="f-notes" name="notes" placeholder="Notes" rows="2" maxlength="2000"></textarea>
       </div>
 
+      <div class="group-head">
+        <h3 class="group-title">Steps</h3>
+        <button type="button" class="link small" id="ai-steps">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2l1.9 5.1L18 9l-5.1 1.9L11 16l-1.9-5.1L4 9l5.1-1.9L11 2Zm7 11 1 2.6 2.6 1-2.6 1L18 22l-1-2.4-2.6-1 2.6-1L18 13Z"/></svg>
+          Suggest steps with AI
+        </button>
+      </div>
+      <div class="group">
+        <div id="steps-list"></div>
+        <div class="row step-add">
+          <span class="step-plus" aria-hidden="true">+</span>
+          <input id="step-input" placeholder="Add a step" maxlength="200" enterkeyhint="done" aria-label="Add a step">
+        </div>
+      </div>
+
       <div class="chips" role="group" aria-label="Quick date">
         <button type="button" class="chip" data-quick="today">Today</button>
         <button type="button" class="chip" data-quick="tomorrow">Tomorrow</button>
         <button type="button" class="chip" data-quick="week">Next week</button>
-        <button type="button" class="chip" data-quick="none">No date</button>
+        <button type="button" class="chip" data-quick="none">Someday</button>
       </div>
 
       <div class="group">
@@ -80,14 +105,14 @@
           <input type="date" id="f-date" name="date">
         </label>
         <label class="row">
-          <span class="row-icon" style="--c: var(--accent)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2v6.4Z"/></svg></span>
-          <span class="row-label">Time</span>
-          <input type="time" id="f-time" name="time">
-        </label>
-        <label class="row">
           <span class="row-icon" style="--c: var(--purple)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg></span>
           <span class="row-label">Remind me</span>
           <input type="checkbox" class="switch" role="switch" id="f-remind" name="remind">
+        </label>
+        <label class="row" id="time-row">
+          <span class="row-icon" style="--c: var(--accent)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 10.4 3.3 3.3-1.4 1.4L11 13.2V6h2v6.4Z"/></svg></span>
+          <span class="row-label">Time</span>
+          <input type="time" id="f-time" name="time">
         </label>
         <label class="row">
           <span class="row-icon" style="--c: var(--gray)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1l4 4-4 4V6H7a2 2 0 0 0-2 2v3H3V8a4 4 0 0 1 4-4h10V1ZM7 23l-4-4 4-4v3h10a2 2 0 0 0 2-2v-3h2v3a4 4 0 0 1-4 4H7v3Z"/></svg></span>
@@ -101,7 +126,7 @@
         </label>
         <label class="row">
           <span class="row-icon" style="--c: var(--orange)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h2v1h11.5l-2.5 5 2.5 5H7v9H5V2Z"/></svg></span>
-          <span class="row-label">Flag</span>
+          <span class="row-label">Important</span>
           <input type="checkbox" class="switch" role="switch" id="f-flag" name="flagged">
         </label>
       </div>
@@ -110,7 +135,7 @@
       <div class="group" id="editor-extra" hidden>
         <button type="button" class="row action" id="ask-ai">
           <span class="row-icon" style="--c: var(--indigo)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2l1.9 5.1L18 9l-5.1 1.9L11 16l-1.9-5.1L4 9l5.1-1.9L11 2Zm7 11 1 2.6 2.6 1-2.6 1L18 22l-1-2.4-2.6-1 2.6-1L18 13Z"/></svg></span>
-          <span class="row-label">Ask AI how to finish this</span>
+          <span class="row-label">Ask AI how to get this done</span>
         </button>
         <button type="button" class="row action danger" id="delete-btn">
           <span class="row-label">Delete Task</span>
@@ -118,6 +143,25 @@
       </div>
     </div>
   </form>
+
+  <!-- AI assistant -->
+  <section class="sheet tall" id="assistant" role="dialog" aria-modal="true" aria-labelledby="assistant-title" hidden>
+    <div class="sheet-head">
+      <button type="button" class="link" id="chat-new">New chat</button>
+      <div class="sheet-title">
+        <h2 id="assistant-title">Assistant</h2>
+        <span class="sheet-sub" id="assistant-model"></span>
+      </div>
+      <button type="button" class="link strong" data-close>Done</button>
+    </div>
+    <div class="chat" id="chat-log" aria-live="polite"></div>
+    <form class="chat-form" id="chat-form" autocomplete="off">
+      <textarea id="chat-text" rows="1" placeholder="Tell me what you need to do…" maxlength="4000" aria-label="Message"></textarea>
+      <button type="submit" class="send-btn" id="chat-send" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </button>
+    </form>
+  </section>
 
   <!-- Settings -->
   <section class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
@@ -127,6 +171,34 @@
       <button type="button" class="link strong" data-close>Done</button>
     </div>
     <div class="sheet-body">
+      <h3 class="group-title" id="ai-settings-title">AI model</h3>
+      <div class="group">
+        <label class="row">
+          <span class="row-label">Provider</span>
+          <select id="ai-provider"></select>
+        </label>
+        <label class="row stack" id="ai-url-row">
+          <span class="row-label">Server URL</span>
+          <input class="field-inline" id="ai-url" type="url" inputmode="url" placeholder="http://192.168.1.10:11434/v1" spellcheck="false" autocapitalize="off">
+        </label>
+        <label class="row stack" id="ai-key-row">
+          <span class="row-label">API key</span>
+          <input class="field-inline" id="ai-key" type="password" placeholder="Paste your API key" spellcheck="false" autocapitalize="off" autocomplete="off">
+        </label>
+        <label class="row stack">
+          <span class="row-label">Model</span>
+          <input class="field-inline" id="ai-model" list="ai-model-list" placeholder="Tap “Load models” or type a name" spellcheck="false" autocapitalize="off">
+          <datalist id="ai-model-list"></datalist>
+        </label>
+        <label class="row" id="ai-model-pick-row" hidden>
+          <span class="row-label">Pick a model</span>
+          <select id="ai-model-pick"></select>
+        </label>
+        <button type="button" class="row action" id="ai-load-models">Load models</button>
+        <button type="button" class="row action" id="ai-test">Test connection</button>
+      </div>
+      <p class="hint" id="ai-hint"></p>
+
       <h3 class="group-title">Reminders</h3>
       <div class="group">
         <div class="row">
@@ -142,13 +214,6 @@
       </div>
       <p class="hint" id="notif-hint"></p>
 
-      <h3 class="group-title">AI helper</h3>
-      <div class="group">
-        <button type="button" class="row action" id="ai-plan-tomorrow">Plan tomorrow with AI</button>
-        <button type="button" class="row action" id="ai-plan-today">Plan today with AI</button>
-      </div>
-      <p class="hint">Sends your tasks to ChatGPT, Claude or any AI app you pick (or copies them), and asks for a step‑by‑step plan.</p>
-
       <h3 class="group-title">Your data</h3>
       <div class="group">
         <button type="button" class="row action" id="export-btn">Export Backup</button>
@@ -156,7 +221,7 @@
         <input type="file" id="import-file" accept="application/json,.json" hidden>
         <button type="button" class="row action danger" id="clear-done">Clear Completed Tasks</button>
       </div>
-      <p class="hint">Everything is stored only on this device. Nothing is sent to any server.</p>
+      <p class="hint">Tasks are stored only on this device. Backups don't include your API key.</p>
 
       <div class="group" id="install-group" hidden>
         <button type="button" class="row action" id="install-btn">Install App on Home Screen</button>
@@ -166,6 +231,7 @@
     </div>
   </section>
 
+  <script src="ai.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

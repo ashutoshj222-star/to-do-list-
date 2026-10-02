@@ -1,16 +1,18 @@
-# Tasks: a simple to-do app with reminders
+# Tasks: a simple to-do app with an AI assistant
 
 A clean, Apple-style to-do list for planning your day and tomorrow. It runs
-fully offline on your phone, sends reminder notifications, and keeps all your
-data on your own device. There's no account, no cloud and no server.
+offline on your phone and keeps your data on your own device. There's no
+account and no server. Connect any AI model with an API key and the built-in
+assistant can add, organise and complete tasks for you, and explain how to get
+them done.
 
-- **Today / Tomorrow / Upcoming / Done** lists
-- **Reminders** at the date and time you choose, with **Mark done** and **Snooze 10 min** buttons right in the notification
-- **Repeat** daily, on weekdays, or weekly
-- **Flags** for important tasks, **notes** for details
-- **Undo** for complete and delete
-- **Ask AI**: one tap sends a task (or your whole day) to ChatGPT, Claude or any AI app on your phone and asks for a step-by-step plan
-- **Backup**: export and import a JSON file
+- **Quick add bar**: type a task, press enter, done
+- **Today / Tomorrow / Later / Done** lists, with "1 of 4 done" progress and a "Done today" section
+- **Steps**: a checklist inside every task (write them yourself, or let AI suggest them)
+- **AI assistant** (✦ button): works with Claude, ChatGPT, Gemini, OpenRouter, Groq, or a free local model on your computer (Ollama / LM Studio)
+- Optional **reminders** with **Mark done** and **Snooze 10 min** buttons in the notification
+- **Repeat** daily, on weekdays, or weekly; mark tasks **Important**
+- **Undo** for complete and delete; **backup** to a JSON file
 - Light and dark mode follow your phone's setting
 
 The design follows [`DESIGN.md`](DESIGN.md), a design system written in the
@@ -63,19 +65,54 @@ or just `python3 -m http.server 8080 -d www`.
 
 ---
 
-## Using AI with your tasks (works today)
+## Connect an AI model
 
-- Open a task and tap **Ask AI how to finish this**.
-- Or tap **Plan tomorrow with AI** at the bottom of the Tomorrow list.
+1. Open **Settings** (the **⋯** button) and go to **AI model**.
+2. Pick a **Provider** and paste your **API key**:
 
-The app writes a prompt containing your task, notes and deadline, then opens
-your phone's share sheet. Pick ChatGPT, Claude or Gemini and you'll get a
-step-by-step plan. On a computer, the prompt is copied to your clipboard
-instead.
+   | Provider | Where to get a key | Notes |
+   | --- | --- | --- |
+   | Claude (Anthropic) | console.anthropic.com → API keys | Default model `claude-opus-5-5` |
+   | ChatGPT (OpenAI) | platform.openai.com → API keys | |
+   | Gemini (Google) | aistudio.google.com → Get API key | Has a free tier |
+   | OpenRouter | openrouter.ai → Keys | One key for hundreds of models |
+   | Groq | console.groq.com → API keys | Very fast |
+   | Ollama / LM Studio | No key needed | Free, runs on your own computer |
+   | Other | Any OpenAI-compatible API | Enter its URL |
 
-## Connecting AI later (MCP)
+3. Tap **Load models** and pick one (or type a model name), then tap **Test connection**.
+4. Tap **✦** next to the add bar and talk to it.
 
-The app is ready for this whenever you want it. Nothing is required now.
+Things you can say:
+
+- "Tomorrow: call the bank at 3pm, buy groceries, gym at 7am." It adds the tasks, with reminders for the ones that have a time.
+- "Plan my day." It looks at your tasks and suggests an order and timing.
+- "How do I finish the tax return?" You get practical steps, which it can save into the task as a checklist.
+- "I finished the report." It ticks the task off.
+
+Inside a task, **Suggest steps with AI** writes a checklist for it, and
+**Ask AI how to get this done** opens the assistant about that task.
+
+**Privacy and cost.** Your API key is saved only on this phone and is only
+sent to the provider you picked. Backups never include it. When you use the
+assistant, your tasks are sent to that provider so it can help, and usage is
+billed by them. With Ollama or LM Studio, everything stays on your own
+computer and Wi-Fi.
+
+**Running a model on your computer (free).** Install
+[Ollama](https://ollama.com), download a model (for example `ollama pull llama3.2`),
+and start it so your phone can reach it: `OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS=* ollama serve`.
+In the app, pick **Ollama**, set the Server URL to your computer's Wi-Fi address
+(for example `http://192.168.1.10:11434/v1`), then load models. Small local models
+can chat, but some can't use tools, so they may not be able to change your tasks.
+
+Without an AI key, the assistant offers to **share** your task or day plan to
+the ChatGPT or Claude app on your phone instead.
+
+## Connecting other AI apps (MCP, later)
+
+You can also let outside AI apps such as Claude Desktop or ChatGPT control your
+tasks. Nothing is required for this now.
 
 - **Plain data format.** *Settings → Export Backup* saves everything as JSON:
 
@@ -88,6 +125,7 @@ The app is ready for this whenever you want it. Nothing is required now.
         "id": "…", "title": "Call bank", "notes": "",
         "date": "2026-10-03", "time": "15:30",
         "remind": true, "repeat": "none", "flagged": false,
+        "steps": [{ "id": "…", "text": "Find account number", "done": false }],
         "done": false, "doneAt": null, "createdAt": 1759390000000, "updatedAt": 1759390000000
       }
     ]
@@ -146,7 +184,8 @@ After you change anything in `www/`, run `npm run android:sync`.
 www/                 the app (plain HTML/CSS/JS, no build step)
   index.html         screens and sheets
   styles.css         design tokens and components (see DESIGN.md)
-  app.js             tasks, lists, reminders, AI prompts, backup
+  app.js             tasks, lists, steps, reminders, assistant UI, backup
+  ai.js              AI connector: Claude + OpenAI-compatible APIs, tool calling
   sw.js              offline cache and notification buttons
   manifest.webmanifest
   icons/
@@ -160,5 +199,6 @@ DESIGN.md            the design system
 ## Privacy
 
 Your tasks are stored in the app's local storage on your device. The app
-makes no network requests. The only time anything leaves your phone is when
-you tap an **Ask AI** button and choose an app to share with.
+makes no network requests of its own. Data only leaves your phone when you
+use the AI assistant, and then it goes only to the provider you configured,
+or when you share a task to another app.

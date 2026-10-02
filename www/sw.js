@@ -1,9 +1,10 @@
 /* Service worker: makes the app work offline and handles notification buttons. */
-const CACHE = 'tasks-v1.0.0';
+const CACHE = 'tasks-v1.1.0';
 const ASSETS = [
   './',
   'index.html',
   'styles.css',
+  'ai.js',
   'app.js',
   'manifest.webmanifest',
   'icons/icon.svg',

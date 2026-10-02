@@ -56,8 +56,16 @@ color alone to convey state — pair it with text or an icon.
   `--accent` circle with a white check, title fades to `--text-2`.
 - **Grouped list:** rows inside a `--group` card, 12 px radius, hairline separators
   inset to align with the title (not the checkbox).
-- **Primary button (New Task):** pill, `--accent` background, white 17 px / 600 text,
-  floating bottom‑right with a soft shadow.
+- **Quick add bar:** floating pill at the bottom (`--group`, level‑2 shadow) with
+  an AI button (✦, `--indigo` on `--fill`), a borderless text field ("Add a task"),
+  and a round `--accent` add button. Enter adds a task; tapping + with no text
+  opens the full editor.
+- **Steps:** a checklist inside a task. 20 px circular checks, strike‑through when
+  done, and an "Add a step" row with an accent "+".
+- **Assistant chat:** tall sheet. User bubbles are `--accent` with white text and
+  right‑aligned; AI bubbles use `--sheet-group` and are left‑aligned. Actions the AI
+  took show as small `--fill` pills with a green check ("Added "Call the bank"").
+  The input is a rounded field with a round send button.
 - **Bottom sheet:** slides up, 14 px top radius, iOS‑style header
   (`Cancel` · title · `Save`), content in grouped rows.
 - **Switch:** 51 × 31 iOS toggle, `--green` when on.
@@ -85,7 +93,8 @@ color alone to convey state — pair it with text or an icon.
 
 ## 8. Do's and Don'ts
 
-- ✅ Do keep one primary action per screen.
+- ✅ Do keep one primary action per screen (on the list screen, adding a task).
+- ✅ Do show every change the AI makes, in plain words.
 - ✅ Do use plain language: "Tomorrow, 9:00 AM", not ISO dates.
 - ✅ Do offer Undo instead of confirmation dialogs.
 - ❌ Don't add gradients, heavy borders or more than one accent.

@@ -6,9 +6,15 @@
     "backgroundColor": "#F2F2F7"
   },
   "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
     "LocalNotifications": {
       "smallIcon": "ic_stat_notify",
       "iconColor": "#007AFF"
     }
+  },
+  "server": {
+    "cleartext": true
   }
 }
